@@ -39,8 +39,12 @@ func Load(settingsFile string) AppConfig {
 		json.Unmarshal(data, &cfg.Settings)
 	}
 
-	if cfg.Settings.Theme != "" {
-		themeFile := cfg.Settings.Theme + ".json"
+	if themeName := EffectiveThemeName(cfg.Settings.Theme); themeName == OmarchyThemeName {
+		if theme, err := LoadOmarchyTheme(); err == nil {
+			cfg.Theme = theme
+		}
+	} else if themeName != "" {
+		themeFile := themeName + ".json"
 		if data, err := readFirstTheme(paths, themeFile); err == nil {
 			json.Unmarshal(data, &cfg.Theme)
 		} else if data, err := themes.FS.ReadFile(themeFile); err == nil {
@@ -103,11 +107,18 @@ func ListThemes() []string {
 		}
 	}
 
+	if OmarchyAvailable() && !seen[OmarchyThemeName] {
+		names = append(names, OmarchyThemeName)
+	}
+
 	sort.Strings(names)
 	return names
 }
 
 func LoadTheme(name string) (ThemeConfig, error) {
+	if name == OmarchyThemeName {
+		return LoadOmarchyTheme()
+	}
 	theme := DefaultTheme()
 	themeFile := name + ".json"
 

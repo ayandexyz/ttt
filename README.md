@@ -288,6 +288,8 @@ TTT supports fully customizable themes via JSON files. Every color is themeable 
 
 Switch themes via **View > Switch Theme** (or the command palette) for a live preview. To create a custom theme, copy a built-in file to `~/.config/ttt/themes/` and set `"theme"` in `settings.json`. To use your terminal's native colors, set foreground/background to empty strings in your theme file.
 
+On [Omarchy](https://omarchy.org), the `omarchy` theme builds its colors from the active desktop theme (`~/.local/state/omarchy/current/theme/colors.toml`) and follows `omarchy theme set` live. It is the default there when `"theme"` is unset; pick any other theme to opt out.
+
 See [Themes](docs-web/src/content/docs/guides/themes.md).
 
 ### Plugins

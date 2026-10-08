@@ -88,6 +88,7 @@ type App struct {
 	quitPending            bool
 	menuReturnFocus        ui.Widget
 	Watcher                *watcher.Watcher
+	OmarchyWatcher         *watcher.Watcher
 	GitGutterGen           int
 	GitGutterTimer         *time.Timer
 	gitGutterCancel        context.CancelFunc
@@ -626,6 +627,7 @@ func (a *App) Init(screen *term.TcellScreen, renderer *render.Renderer, lspManag
 		screen.PostEvent(tcell.NewEventInterrupt(&ui.EditorDragAutoScrollTick{Generation: generation}))
 	}
 	a.StartWatcher()
+	a.StartOmarchyWatcher()
 
 	if a.Changes != nil {
 		a.Changes.Screen = screen

@@ -33,6 +33,9 @@ func RunEventLoop(
 	if app.Watcher != nil {
 		defer app.Watcher.Close()
 	}
+	if app.OmarchyWatcher != nil {
+		defer app.OmarchyWatcher.Close()
+	}
 	if app.Repository != nil {
 		defer app.Repository.Close()
 	}
@@ -425,6 +428,8 @@ func RunEventLoop(
 				app.HandleFileChanged(v.Path)
 			case *ExplorerDirChangedResult:
 				app.HandleExplorerDirChanged(v.Dir)
+			case *OmarchyThemeChangedResult:
+				app.HandleOmarchyThemeChanged()
 			case *ui.SearchBatch:
 				app.Search.ApplyBatch(v)
 			case *DiffContentResult:

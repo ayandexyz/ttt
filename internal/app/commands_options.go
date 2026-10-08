@@ -258,8 +258,8 @@ func (a *App) applyBorderStyle(themeBorders *term.BorderSet) {
 		// from an explicit style back to "default" actually take effect.
 		if themeBorders != nil {
 			*a.Borders = *themeBorders
-		} else if a.Settings.Theme != "" {
-			if theme, err := config.LoadTheme(a.Settings.Theme); err == nil {
+		} else if name := config.EffectiveThemeName(a.Settings.Theme); name != "" {
+			if theme, err := config.LoadTheme(name); err == nil {
 				*a.Borders = BuildBorderSet(theme.Borders)
 			}
 		}

@@ -143,25 +143,31 @@ func (a *App) ApplySettings(s config.Settings) {
 	// otherwise switching back to it leaves the previous theme's colors on screen.
 	var themeBorders *term.BorderSet
 	if a.Screen != nil {
-		theme, ok := config.DefaultTheme(), s.Theme == ""
+		themeName := config.EffectiveThemeName(s.Theme)
+		theme, ok := config.DefaultTheme(), themeName == ""
 		if !ok {
-			loaded, err := config.LoadTheme(s.Theme)
+			loaded, err := config.LoadTheme(themeName)
 			theme, ok = loaded, err == nil
 		}
 		if ok {
-			ApplyThemeStyles(a.Screen, theme, WithTransparentBackground(s.Editor.TransparentBackground))
-			*a.Palette = BuildTerminalPalette(theme, WithTransparentBackground(s.Editor.TransparentBackground))
-			borders := BuildBorderSet(theme.Borders)
-			*a.Borders = borders
+			borders := a.applyThemeConfig(theme, s.Editor.TransparentBackground)
 			themeBorders = &borders
-			a.Renderer.Clear()
-			a.invalidateImageLayer()
 		}
 	}
 
 	// Overrides what the theme resolved, so it must run last and unconditionally.
 	// Passing the borders just built avoids reloading the theme from disk.
 	a.applyBorderStyle(themeBorders)
+}
+
+func (a *App) applyThemeConfig(theme config.ThemeConfig, transparentBg bool) term.BorderSet {
+	ApplyThemeStyles(a.Screen, theme, WithTransparentBackground(transparentBg))
+	*a.Palette = BuildTerminalPalette(theme, WithTransparentBackground(transparentBg))
+	borders := BuildBorderSet(theme.Borders)
+	*a.Borders = borders
+	a.Renderer.Clear()
+	a.invalidateImageLayer()
+	return borders
 }
 
 func registerSettingsCommands(app *App) {
