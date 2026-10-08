@@ -162,6 +162,7 @@ func DefaultEditorSettings() EditorSettings {
 		GutterStyle:             "compact",
 		BorderStyle:             "default",
 		BracketPairColorization: false,
+		TransparentBackground:   true,
 	}
 }
 

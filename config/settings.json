@@ -23,7 +23,7 @@
     "gutterStyle": "compact",
     "borderStyle": "default",
     "bracketPairColorization": false,
-    "transparentBackground": false
+    "transparentBackground": true
   },
   "search": {
     "debounce": 350
