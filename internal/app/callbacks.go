@@ -618,7 +618,7 @@ func registerWidgetCallbacks(app *App) {
 
 	app.Explorer.OnAction = func(id string) { reg.Execute(id) }
 	app.EditorGroup.OnEmpty = func() {
-		if app.welcomeWhenEmpty && len(app.Workspace.Paths()) == 0 {
+		if app.welcomeWhenEmpty || len(app.Workspace.Paths()) > 0 {
 			app.ShowEmptyState()
 		}
 	}

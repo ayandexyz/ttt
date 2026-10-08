@@ -501,6 +501,9 @@ func (a *App) refreshWorkspaceWidgets() {
 		a.welcomeWhenEmpty = false
 		a.closeWelcome()
 		a.ShowSidebar()
+		if a.editorIsBlank() {
+			a.ShowEmptyState()
+		}
 	}
 
 	a.Search.SetWorkDirs(paths)

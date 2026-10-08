@@ -371,7 +371,7 @@ Docs: https://tttedit.dev
 
 	editor.PendingFileTargets = fileTargets
 	editor.RememberRecentFolders()
-	if len(editor.Workspace.Paths()) == 0 && len(fileTargets) == 0 && len(prURLs) == 0 {
+	if len(fileTargets) == 0 && len(prURLs) == 0 {
 		editor.ShowEmptyState()
 	}
 

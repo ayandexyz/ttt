@@ -19,8 +19,8 @@ func TestCloseAllTabsNoDirty(t *testing.T) {
 	h.redraw()
 
 	name := h.app.EditorGroup.ActiveFileName()
-	if name != "untitled" {
-		t.Errorf("expected untitled after close all, got %q", name)
+	if name != "welcome" {
+		t.Errorf("expected the welcome page after close all, got %q", name)
 	}
 }
 

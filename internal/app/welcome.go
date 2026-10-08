@@ -134,11 +134,14 @@ func isBlank(b *buffer.Buffer) bool {
 }
 
 // ShowEmptyState makes the welcome page the editor's empty state: it stays
-// while nothing is open, and the sidebar has nothing to add to it.
+// while nothing is open, in place of a blank untitled tab.
 func (a *App) ShowEmptyState() {
 	a.ShowWelcome()
 	a.EditorGroup.EmptyStateID = welcomeTabID
 	a.welcomeIsEmptyState = true
+	if len(a.Workspace.Paths()) > 0 {
+		return
+	}
 	a.welcomeWhenEmpty = true
 	// Having no folders is not a choice to hide the sidebar; persisting it
 	// would keep the sidebar hidden in the next session that has folders.
