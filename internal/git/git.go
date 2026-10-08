@@ -286,9 +286,27 @@ func BranchNameContext(ctx context.Context, dir string) (string, error) {
 
 type LogEntry struct {
 	// Hash is presentation-only; Ref is the stable full object identity.
-	Hash    string
-	Ref     string
-	Message string
+	Hash        string
+	Ref         string
+	Message     string
+	Parents     []string
+	Decorations []Decoration
+}
+
+type DecorationKind int
+
+const (
+	DecorationHead DecorationKind = iota
+	DecorationBranch
+	DecorationRemote
+	DecorationTag
+)
+
+// Decoration is a ref pointing at a commit. DecorationHead is the checked-out
+// branch, or a bare "HEAD" when detached.
+type Decoration struct {
+	Name string
+	Kind DecorationKind
 }
 
 type ObjectID string
@@ -330,7 +348,7 @@ func LogPageContext(ctx context.Context, dir string, anchor ObjectID, offset, li
 	}
 	cmd := gitCommandContext(ctx, "-C", dir, "log",
 		fmt.Sprintf("--skip=%d", offset), fmt.Sprintf("-%d", limit+1),
-		"-z", "--pretty=format:%H%x00%h%x00%s", string(anchor))
+		"-z", "--topo-order", "--decorate=full", "--pretty=format:%H%x00%h%x00%P%x00%D%x00%s", string(anchor))
 	out, err := cmd.Output()
 	if err != nil {
 		if ctx.Err() != nil {
@@ -339,13 +357,19 @@ func LogPageContext(ctx context.Context, dir string, anchor ObjectID, offset, li
 		return LogPage{}, err
 	}
 	fields := bytes.Split(bytes.TrimSuffix(out, []byte{0}), []byte{0})
-	entries := make([]LogEntry, 0, len(fields)/3)
-	for index := 0; index+2 < len(fields); index += 3 {
+	entries := make([]LogEntry, 0, len(fields)/5)
+	for index := 0; index+4 < len(fields); index += 5 {
 		ref, hash := string(fields[index]), string(fields[index+1])
 		if ref == "" || hash == "" {
 			continue
 		}
-		entries = append(entries, LogEntry{Hash: hash, Ref: ref, Message: string(fields[index+2])})
+		entries = append(entries, LogEntry{
+			Hash:        hash,
+			Ref:         ref,
+			Parents:     strings.Fields(string(fields[index+2])),
+			Decorations: parseDecorations(string(fields[index+3])),
+			Message:     string(fields[index+4]),
+		})
 	}
 	page := LogPage{HasMore: len(entries) > limit}
 	if page.HasMore {
@@ -353,6 +377,40 @@ func LogPageContext(ctx context.Context, dir string, anchor ObjectID, offset, li
 	}
 	page.Entries = entries
 	return page, nil
+}
+
+// parseDecorations reads git's %D under --decorate=full, where the ref
+// namespace is the only reliable way to tell a local branch from a remote one.
+func parseDecorations(s string) []Decoration {
+	if s == "" {
+		return nil
+	}
+	var out []Decoration
+	for _, part := range strings.Split(s, ", ") {
+		kind := DecorationBranch
+		if head, ok := strings.CutPrefix(part, "HEAD -> "); ok {
+			part, kind = head, DecorationHead
+		} else if part == "HEAD" {
+			out = append(out, Decoration{Name: "HEAD", Kind: DecorationHead})
+			continue
+		}
+		var name string
+		switch {
+		case strings.HasPrefix(part, "tag: refs/tags/"):
+			name, kind = strings.TrimPrefix(part, "tag: refs/tags/"), DecorationTag
+		case strings.HasPrefix(part, "refs/heads/"):
+			name = strings.TrimPrefix(part, "refs/heads/")
+		case strings.HasPrefix(part, "refs/remotes/"):
+			name, kind = strings.TrimPrefix(part, "refs/remotes/"), DecorationRemote
+			if strings.HasSuffix(name, "/HEAD") {
+				continue
+			}
+		default:
+			continue
+		}
+		out = append(out, Decoration{Name: name, Kind: kind})
+	}
+	return out
 }
 
 func CommitAuthoredAt(dir, ref string) (time.Time, error) {

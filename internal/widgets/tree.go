@@ -23,10 +23,21 @@ type TreeNode struct {
 	Expandable   bool       `json:"-"`
 	TruncateLeft bool       `json:"-"`
 
+	// Graph replaces Icon when set; a span with empty Text draws Icon in that
+	// span's style, so icon-mode changes need not rebuild the graph.
+	Graph []TreeSpan `json:"-"`
+	// Tags are drawn between the icon and the label.
+	Tags []TreeSpan `json:"-"`
+
 	Expanded bool `json:"-"`
 	depth    int
 	parent   *TreeNode
 	chevronX int
+}
+
+type TreeSpan struct {
+	Text  string
+	Style term.Style
 }
 
 type Action struct {
@@ -441,7 +452,25 @@ func (t *TreeWidget) renderNode(surface Surface, node *TreeNode, idx, y, w int) 
 		x++
 	}
 
-	if icon := node.Icon; icon != "" {
+	spanStyle := func(s term.Style) term.Style {
+		if s == term.StyleDefault || style == term.StyleSidebarSelected {
+			return style
+		}
+		return s
+	}
+	if len(node.Graph) > 0 {
+		for _, span := range node.Graph {
+			text := span.Text
+			if text == "" {
+				text = node.Icon
+			}
+			x = drawRunesClipped(surface, x, y, maxX, []rune(text), spanStyle(span.Style))
+		}
+		if x < maxX {
+			surface.SetCell(x, y, term.Cell{Ch: ' ', Style: style})
+			x++
+		}
+	} else if icon := node.Icon; icon != "" {
 		iconStyle := node.IconStyle
 		if iconStyle == term.StyleDefault {
 			iconStyle = style
@@ -462,6 +491,14 @@ func (t *TreeWidget) renderNode(surface Surface, node *TreeNode, idx, y, w int) 
 			labelIconStyle = style
 		}
 		x = drawRunesClipped(surface, x, y, maxX, []rune(node.LabelIcon), labelIconStyle)
+		if x < maxX {
+			surface.SetCell(x, y, term.Cell{Ch: ' ', Style: style})
+			x++
+		}
+	}
+
+	for _, tag := range node.Tags {
+		x = drawRunesClipped(surface, x, y, maxX, []rune(tag.Text), spanStyle(tag.Style))
 		if x < maxX {
 			surface.SetCell(x, y, term.Cell{Ch: ' ', Style: style})
 			x++

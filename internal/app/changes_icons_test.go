@@ -108,3 +108,14 @@ func TestCommitHistoryIconsFollowIconMode(t *testing.T) {
 		t.Errorf("none icons = %q, %q", items[0].Icon, items[1].Icon)
 	}
 }
+
+func TestDecorationTagsFoldRemoteIntoLocalBranch(t *testing.T) {
+	tags := decorationTags([]git.Decoration{
+		{Name: "main", Kind: git.DecorationHead},
+		{Name: "origin/main", Kind: git.DecorationRemote},
+		{Name: "upstream/dev", Kind: git.DecorationRemote},
+	})
+	if len(tags) != 2 || tags[0].Text != " main " || tags[1].Text != " upstream/dev " {
+		t.Errorf("tags = %+v, want main and upstream/dev", tags)
+	}
+}

@@ -189,6 +189,20 @@ type FileIconStyles struct {
 	Magenta StyleDef `json:"magenta"`
 }
 
+// GitGraphStyles color the commit history graph. Lanes cycle through Lane1-6.
+type GitGraphStyles struct {
+	Lane1  StyleDef `json:"lane1,omitempty"`
+	Lane2  StyleDef `json:"lane2,omitempty"`
+	Lane3  StyleDef `json:"lane3,omitempty"`
+	Lane4  StyleDef `json:"lane4,omitempty"`
+	Lane5  StyleDef `json:"lane5,omitempty"`
+	Lane6  StyleDef `json:"lane6,omitempty"`
+	Head   StyleDef `json:"head,omitempty"`
+	Branch StyleDef `json:"branch,omitempty"`
+	Remote StyleDef `json:"remote,omitempty"`
+	Tag    StyleDef `json:"tag,omitempty"`
+}
+
 type TerminalColors struct {
 	Foreground    string `json:"foreground,omitempty"`
 	Background    string `json:"background,omitempty"`
@@ -319,6 +333,7 @@ type ThemeConfig struct {
 	// ahead of Syntax. Tokens no rule matches use Syntax.
 	TokenColors []TokenColor   `json:"tokenColors,omitempty"`
 	FileIcons   FileIconStyles `json:"fileIcons"`
+	GitGraph    GitGraphStyles `json:"gitGraph,omitempty"`
 	Borders     BorderChars    `json:"borders"`
 	Terminal    TerminalColors `json:"terminal,omitempty"`
 }
@@ -431,10 +446,10 @@ func (t *ThemeConfig) ResolveColors() {
 	fillFg(&t.Danger, "#f14c4c")
 	fillFg(&t.Warning, "#e2c08d")
 	fillFg(&t.Conflict, "#c586c0")
-	t.SuccessStaged = fadeStyleDef(t.Success, t.Default.Bg)
-	t.DangerStaged = fadeStyleDef(t.Danger, t.Default.Bg)
-	t.WarningStaged = fadeStyleDef(t.Warning, t.Default.Bg)
-	t.ConflictStaged = fadeStyleDef(t.Conflict, t.Default.Bg)
+	t.SuccessStaged = fadeStyleDef(t.Success, t.Default.Bg, stagedFadeAmount)
+	t.DangerStaged = fadeStyleDef(t.Danger, t.Default.Bg, stagedFadeAmount)
+	t.WarningStaged = fadeStyleDef(t.Warning, t.Default.Bg, stagedFadeAmount)
+	t.ConflictStaged = fadeStyleDef(t.Conflict, t.Default.Bg, stagedFadeAmount)
 	fillFg(&t.Editor.Diagnostics.Error, t.Danger.Fg)
 	fillFg(&t.Editor.Diagnostics.Warning, t.Warning.Fg)
 	fillFg(&t.Editor.Diagnostics.Info, t.Default.Fg)
@@ -454,11 +469,38 @@ func (t *ThemeConfig) ResolveColors() {
 	fillFg(&t.FileIcons.Cyan, t.Terminal.Cyan)
 	fillFg(&t.FileIcons.Blue, t.Terminal.Blue)
 	fillFg(&t.FileIcons.Magenta, t.Terminal.Magenta)
+	t.resolveGitGraph()
 	if t.Terminal.Selection == "" {
 		t.Terminal.Selection = t.Editor.Selection.Bg
 	}
 	t.resolveSyntax()
 }
+
+func (t *ThemeConfig) resolveGitGraph() {
+	g := &t.GitGraph
+	fillFg(&g.Lane1, t.Terminal.Blue)
+	fillFg(&g.Lane2, t.Terminal.Magenta)
+	fillFg(&g.Lane3, t.Terminal.Cyan)
+	fillFg(&g.Lane4, t.Terminal.Green)
+	fillFg(&g.Lane5, t.Terminal.Yellow)
+	fillFg(&g.Lane6, t.Terminal.Red)
+	refPill(&g.Head, t.Terminal.Blue, t.Default.Bg)
+	refPill(&g.Branch, t.Terminal.Green, t.Default.Bg)
+	refPill(&g.Remote, t.Terminal.Yellow, t.Default.Bg)
+	refPill(&g.Tag, t.Terminal.Magenta, t.Default.Bg)
+}
+
+// refPill fills a ref label as colored text on a tint of the same color, so
+// it reads as a badge on any background without a hardcoded contrast color.
+func refPill(s *StyleDef, color, bg string) {
+	fillFg(s, color)
+	if s.Bg == "" {
+		s.Bg = fadeStyleDef(StyleDef{Fg: s.Fg}, bg, refPillFade).Fg
+	}
+	s.Bold = true
+}
+
+const refPillFade = 0.78
 
 func (t *ThemeConfig) resolveSyntax() {
 	s := &t.Syntax
@@ -551,7 +593,7 @@ func formatThemeRGB(color themeRGB) string {
 // dimmed variant, since terminals don't support real alpha/opacity.
 const stagedFadeAmount = 0.45
 
-func fadeStyleDef(base StyleDef, bg string) StyleDef {
+func fadeStyleDef(base StyleDef, bg string, amount float64) StyleDef {
 	faded := base
 	fg, fgOK := parseThemeRGB(base.Fg)
 	target, bgOK := parseThemeRGB(bg)
@@ -559,9 +601,9 @@ func fadeStyleDef(base StyleDef, bg string) StyleDef {
 		return faded
 	}
 	faded.Fg = formatThemeRGB(themeRGB{
-		r: fg.r + (target.r-fg.r)*stagedFadeAmount,
-		g: fg.g + (target.g-fg.g)*stagedFadeAmount,
-		b: fg.b + (target.b-fg.b)*stagedFadeAmount,
+		r: fg.r + (target.r-fg.r)*amount,
+		g: fg.g + (target.g-fg.g)*amount,
+		b: fg.b + (target.b-fg.b)*amount,
 	})
 	return faded
 }

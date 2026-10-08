@@ -101,6 +101,16 @@ const (
 	StyleFileIconCyan
 	StyleFileIconBlue
 	StyleFileIconMagenta
+	StyleGitGraphLane1
+	StyleGitGraphLane2
+	StyleGitGraphLane3
+	StyleGitGraphLane4
+	StyleGitGraphLane5
+	StyleGitGraphLane6
+	StyleGitRefHead
+	StyleGitRefBranch
+	StyleGitRefRemote
+	StyleGitRefTag
 	// styleTokenBase starts a block of MaxTokenStyles slots that a theme's
 	// tokenColors fill; see TokenStyle.
 	styleTokenBase

@@ -8,9 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eugenioenko/ttt/internal/core/commitgraph"
 	"github.com/eugenioenko/ttt/internal/core/diff"
 	"github.com/eugenioenko/ttt/internal/git"
 	"github.com/eugenioenko/ttt/internal/icons"
+	"github.com/eugenioenko/ttt/internal/term"
 	"github.com/eugenioenko/ttt/internal/ui"
 	"github.com/eugenioenko/ttt/internal/view"
 	"github.com/eugenioenko/ttt/internal/widgets"
@@ -240,6 +242,7 @@ func (cp *ChangesPanel) ApplyCommitLog(r *CommitLogResult) {
 		Icon:  icons.Get(cp.icons, icons.Branch),
 		Muted: true,
 	})
+	cp.logGraph.Reset()
 	for _, e := range r.Entries {
 		nodes = append(nodes, cp.commitLogNode(r.Dir, e))
 	}
@@ -286,11 +289,62 @@ func (cp *ChangesPanel) commitLogNode(dir string, entry git.LogEntry) *widgets.T
 	id := "commit:" + entry.Ref
 	cp.logCommits[id] = commitFileRef{Dir: dir, Ref: entry.Ref, Short: entry.Hash}
 	node := &widgets.TreeNode{ID: id, Label: entry.Message, Icon: icons.Get(cp.icons, icons.Commit), Badge: entry.Hash, Expandable: true}
+	node.Graph = graphSpans(cp.logGraph.Next(entry.Ref, entry.Parents))
+	node.Tags = decorationTags(entry.Decorations)
 	if cp.logExpanded[commitLogStateKey(dir, id)] {
 		node.Expanded = true
 		node.Children = cp.commitChildren(dir, entry.Ref, entry.Hash, id)
 	}
 	return node
+}
+
+var graphLaneStyles = [...]term.Style{
+	term.StyleGitGraphLane1, term.StyleGitGraphLane2, term.StyleGitGraphLane3,
+	term.StyleGitGraphLane4, term.StyleGitGraphLane5, term.StyleGitGraphLane6,
+}
+
+func graphSpans(cells []commitgraph.Cell) []widgets.TreeSpan {
+	spans := make([]widgets.TreeSpan, len(cells))
+	for i, cell := range cells {
+		style := term.StyleDefault
+		if cell.Lane >= 0 {
+			style = graphLaneStyles[cell.Lane%len(graphLaneStyles)]
+		}
+		if cell.Commit {
+			spans[i] = widgets.TreeSpan{Style: style}
+		} else {
+			spans[i] = widgets.TreeSpan{Text: string(cell.Ch), Style: style}
+		}
+	}
+	return spans
+}
+
+// decorationTags folds a remote branch into the local branch of the same name
+// on the same commit, since the sidebar has little room for duplicate labels.
+func decorationTags(decorations []git.Decoration) []widgets.TreeSpan {
+	local := make(map[string]bool)
+	for _, d := range decorations {
+		if d.Kind == git.DecorationHead || d.Kind == git.DecorationBranch {
+			local[d.Name] = true
+		}
+	}
+	var tags []widgets.TreeSpan
+	for _, d := range decorations {
+		if _, name, ok := strings.Cut(d.Name, "/"); ok && d.Kind == git.DecorationRemote && local[name] {
+			continue
+		}
+		style := term.StyleGitRefBranch
+		switch d.Kind {
+		case git.DecorationHead:
+			style = term.StyleGitRefHead
+		case git.DecorationRemote:
+			style = term.StyleGitRefRemote
+		case git.DecorationTag:
+			style = term.StyleGitRefTag
+		}
+		tags = append(tags, widgets.TreeSpan{Text: " " + d.Name + " ", Style: style})
+	}
+	return tags
 }
 
 func historyLoadOlderNode(loading, retry bool) *widgets.TreeNode {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/eugenioenko/ttt/internal/config"
+	"github.com/eugenioenko/ttt/internal/core/commitgraph"
 	"github.com/eugenioenko/ttt/internal/git"
 	"github.com/eugenioenko/ttt/internal/term"
 	"github.com/eugenioenko/ttt/internal/ui"
@@ -40,6 +41,7 @@ type ChangesPanel struct {
 	logDir string
 	// Every appended page is tied to one immutable full HEAD snapshot.
 	logAnchor      git.ObjectID
+	logGraph       commitgraph.Graph
 	logOffset      int
 	logHasMore     bool
 	logPagePending bool

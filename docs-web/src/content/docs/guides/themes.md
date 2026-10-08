@@ -310,5 +310,6 @@ When a theme has `tokenColors`, they decide every token's color the way VS Code 
 | `syntax` | Syntax highlighting colors for language tokens. See [Syntax styles](#syntax-styles). |
 | `tokenColors` | Optional VS Code token color rules. See [VS Code token colors](#vs-code-token-colors). |
 | `fileIcons` | File icon colors in the Explorer and Changes panel, by hue family (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`). Each entry defaults to the matching `terminal` color, so most themes need no `fileIcons` section. Neutral icons use the row's normal text color |
+| `gitGraph` | Commit history graph colors: `lane1` to `lane6` (graph lines, cycled per lane) and the ref labels `head` (checked-out branch), `branch`, `remote`, and `tag`. Lanes default to the `terminal` blue, magenta, cyan, green, yellow, and red; labels default to bold text on a tint of their color, so most themes need no `gitGraph` section |
 | `terminal` | ANSI color palette for the integrated terminal (16 colors), plus `selection`, the highlight background for selected terminal text. `selection` inherits `editor.selection.bg` when omitted. |
 | `borders` | Unicode characters used for drawing box borders. Overridden when `borderStyle` in settings is set to a named preset (e.g. `"rounded"`, `"double"`). Use `"default"` or `"theme"` to respect the theme's borders. |
